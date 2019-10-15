@@ -1,0 +1,18 @@
+PokerPlayerPatterns (PPP)
+-------------------------
+
+This is a project which focuses on 
+analysing the poker game dataset 
+provided, which should give us some 
+insight into patterns created by 
+users.
+
+Using those patterns hopefully we 
+can predict a player's behaviour 
+and classify him into a subgroup.
+
+The datasets used are provided by 
+kaggle.com at (1).
+
+references:
+(1) https://www.kaggle.com/smeilz/poker-holdem-games#File198.txt
