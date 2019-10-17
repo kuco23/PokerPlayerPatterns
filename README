@@ -18,8 +18,8 @@ the following actions:
 - classify player into a certain subgroup
 - determine the best player
 
-The datasets used are provided by 
-kaggle.com at (1).
+The datasets used are provided by kaggle.com at 
+(1).
 
 references:
 (1) https://www.kaggle.com/smeilz/poker-holdem-games#File198.txt
