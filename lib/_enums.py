@@ -1,9 +1,9 @@
 from enum import IntEnum
 
 class OutId(IntEnum):
-    GameStart = 0
-    GameEnd = 1
-    GameId = 2
+    RoundStart = 0
+    RoundEnd = 1
+    RoundId = 2
     SeatJoined = 3
     SeatButton = 4
     PlayerBlind = 5

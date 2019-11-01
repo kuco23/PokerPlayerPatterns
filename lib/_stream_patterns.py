@@ -6,24 +6,23 @@ _actions = '|'.join([
     'calls',
     'checks',
     'raises',
-    'allin',
-    'bets'
+    'allin'
 ])
 
 out_type = re.compile(
     r'\*?(?P<out_type>[^\s]+)'
 )
-game_start = re.compile(
+round_start = re.compile(
     r'Game started at: '
     r'(?P<date>[\d/]+) '
     r'(?P<time>[\d:]+)'
 )
-game_id = re.compile(
+round_id = re.compile(
     r'Game ID: '
-    r'(?P<game_id>\d+) '
+    r'(?P<round_id>\d+) '
     r'(?P<blinds>[\d\./]+) '
 )
-game_end = re.compile(
+round_end = re.compile(
     r'Game ended at: '
     r'(?P<date>[\d/]+) '
     r'(?P<time>[\d:]+)'
@@ -31,32 +30,33 @@ game_end = re.compile(
 seat_joined = re.compile(
     r'Seat '
     r'(?P<seat>\d): '
-    r'(?P<username>.+?) '
+    r'(?P<user>.+?) '
     r'\((?P<buyin>[\d\.]+)\)\.'
 )
 seat_button = re.compile(
     r'Seat (?P<seat>\d) is the button'
 )
 player_blind = re.compile(
-    r'Player (?P<username>.+?) '
+    r'Player (?P<user>.+?) '
     r'has (?P<blind_type>\w+) blind '
     r'\((?P<blind_amount>[\d\.]+)\)'
 )
 player_received_card = re.compile(
-    r'Player (?P<username>.+?) '
+    r'Player (?P<user>.+?) '
     r'received(?: a)? card'
 )
 player_action = re.compile(
-    r'Player (?P<username>.+?) '
+    r'Player (?P<user>.+?) '
     rf'(?P<action>{_actions})'
     r'(?: \((?P<amount>[\d\.]+)\))?'
 )
 player_show_cards = re.compile(
-    r'\*?Player '
-    r'(?P<username>.+?) '
+    r'\*?Player (?P<user>.+?) '
     r'(?:mucks )?'
-    r'(?:\(?does not show cards\)?\.)|'
-    r'(?:shows: (?P<hand>.+?)\. )'
+    r'(?:'
+    r'(?:\(?does not show cards\)?)|'
+    r'(?:shows: (?P<hand>.+?)?)'
+    r')\. ?'
     r'Bets: (?P<bets>[\d\.]+)\. '
     r'Collects: (?P<collects>[\d\.]+)\. '
     r'(?P<state>Wins|Loses): '
@@ -79,9 +79,9 @@ board_show = re.compile(
 
 out_types = {
     'Game': [
-        (game_start, OutId.GameStart),
-        (game_end, OutId.GameEnd),
-        (game_id, OutId.GameId)
+        (round_start, OutId.RoundStart),
+        (round_end, OutId.RoundEnd),
+        (round_id, OutId.RoundId)
     ],
     'Seat': [
         (seat_joined, OutId.SeatJoined),
@@ -102,4 +102,22 @@ out_types = {
     'Board': [
         (board_show, OutId.BoardShow)
     ]
+}
+
+expected_data = {
+    OutId.RoundStart : ['date', 'time'],
+    OutId.RoundEnd : ['date', 'time'],
+    OutId.RoundId : ['round_id', 'blinds'],
+    OutId.SeatJoined : ['seat', 'user', 'buyin'],
+    OutId.SeatButton : ['seat'],
+    OutId.PlayerBlind : ['user', 'blind_type', 'blind_amount'],
+    OutId.PlayerReceivedCard : ['user'],
+    OutId.PlayerShowCards : [
+        'user', 'hand', 'bets', 
+        'collects', 'state', 'amount'
+    ],
+    OutId.PlayerAction : ['user', 'action', 'amount'],
+    OutId.NewTurn : ['turn_name', 'board', 'new_cards'],
+    OutId.PotSize : ['pot_size'],
+    OutId.BoardShow : ['board']
 }
