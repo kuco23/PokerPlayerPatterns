@@ -10,14 +10,16 @@ class RoundPlayer:
         self.assets = assets
 
         self.winnings = 0
+        self.stakes = [0] * 5
 
-        self.has_folded = False
-        self.has_folded_preflop = False
-        self.has_raised_preflop = False
-        self.number_of_raises = 0
-        self.sum_of_raises = 0
-        self.number_of_calls = 0
-        self.number_of_allins = 0
+        self.folded_to = -1
+        self.folded_turn = -1
+        self.raised_turn = -1
+        self.times_raised = 0
+        self.raise_sum = 0
+        self.times_called = 0
+        self.call_sum = 0
+        self.times_allined = 0
     
     def addWinnings(self, winnings):
         self.winnings += winnings
@@ -25,22 +27,25 @@ class RoundPlayer:
     def addLosings(self, losings):
         self.winnings -= losings
     
-    def folds(self, turn):
-        self.has_folded = True
-        if turn == 0: 
-            self.has_folded_preflop = True
+    def folds(self, stake, turn):
+        self.folded_to = stake - self.stakes[turn]
+        self.folded_turn = turn
 
     def raises(self, amount, turn):
-        self.number_of_raises += 1
-        self.sum_of_raises += amount
-        if turn == 0: 
-            self.has_raised_preflop = True
+        self.stakes[turn] += amount
+        self.times_raised += 1
+        self.raise_sum += amount
+        if not self.raised_turn: 
+            self.raised_turn = turn
 
-    def calls(self, turn):
-        pass
+    def calls(self, amount, turn):
+        self.stakes[turn] += amount
+        self.times_called += 1
+        self.call_sum += amount
 
     def allins(self, amount, turn):
-        self.number_of_allins += 1
+        self.stakes[turn] += amount
+        self.times_allined += 1
 
 class RoundParser:
     _turns = ['PREFLOP', 'FLOP', 'TURN', 'RIVER']
@@ -53,14 +58,21 @@ class RoundParser:
         self.pot = 0
         self.small_blind = -1
         self.big_blind = -1
-        
-        self.is_finished = False
 
         # data used only for export
         self.small_blind_player = None
         self.big_blind_player = None
-        
-    
+
+    @property
+    def turn_max_stake(self):
+        return max(map(
+            lambda p: p.stakes[self.turn],
+            self.players.values()
+        ))
+
+    def __iter__(self):
+        yield from self.players.values()
+            
     def __iadd__(self, player : RoundPlayer):
         self.players[player.name] = player
         return self
@@ -113,7 +125,7 @@ def parseMatch(pid, mch, rns):
         ))
     
     elif pid == OId.RoundEnd:
-        rns.obj.is_finished = True
+        rns.finished = True
         
     elif pid == OId.SeatJoined:
         user, seat, buyin = map(
@@ -149,9 +161,10 @@ def parseMatch(pid, mch, rns):
         action = dic.get('action')
         amount = dic.get('amount')
         if action == 'folds':
-            player.folds(rns.obj.turn)
+            stake = rns.obj.turn_max_stake
+            player.folds(stake, rns.obj.turn)
         elif action == 'calls': 
-            player.calls(rns.obj.turn)
+            player.calls(float(amount), rns.obj.turn)
         elif action == 'raises':
             player.raises(float(amount), rns.obj.turn)
         elif action == 'allin': 
@@ -164,14 +177,16 @@ def parseMatch(pid, mch, rns):
         rns.obj.pot = float(dic['pot_size'])
 
 def roundSeriesParser():
-    round_ns = SimpleNamespace(obj=None, id=0)
+    round_ns = SimpleNamespace(
+        obj=None, id=0, finished=False
+    )
     while True:
         line = (yield)
         pid, mch = parseLine(line)
         if pid is None: continue
         parseMatch(pid, mch, round_ns)
-        if round_ns.obj is None: continue
-        if round_ns.obj.is_finished:
+        if round_ns.obj is not None and round_ns.finished:
             yield round_ns.obj
             round_ns.id += 1
             round_ns.obj = None
+            round_ns.finished = False
