@@ -71,7 +71,7 @@ new_turn = re.compile(
 )
 pot_size = re.compile(
     r'Pot: '
-    r'(?P<pot_size>[\d\.]+)'
+    r'(?P<pot_size>[\d\.]+)\.'
 )
 board_show = re.compile(
     r'(?P<board>\[.+?\])'
@@ -96,7 +96,7 @@ out_types = {
     '**': [
         (new_turn, OutId.NewTurn)
     ],
-    'Pot': [
+    'Pot:': [
         (pot_size, OutId.PotSize)
     ],
     'Board': [

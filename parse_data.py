@@ -1,32 +1,53 @@
 from collections import namedtuple
+from pathlib import Path
+import csv
 
 from lib import patterns, parser
 
-path = 'datasets/poker_games.txt'
+DATA_DIR = Path.cwd() / 'datasets'
+DATASET = DATA_DIR / 'poker_games.txt'
+ROUND_DATA = DATA_DIR / 'round_data.csv'
 
-with open(path, 'r') as file:
-    h = [next(file) for _ in range(100)]
-
-for line in h:
-    if not line.strip(): continue
-    data = parser.parseLine(line)
-    if data:
-        pid, mch = data
-        print(line)
-        print(pid, mch.groupdict())
-
-    
-
-('round_id', 'big_blind', 'small_blind')
-('player_id', 'player_name')
-(
-    'round_id',
-    'player_id',
-    'gave_big_blind',
-    'gave_small_blind',
-    'fold_before_turn',
-    'raise_before_turn',
-    'number_of_calls'
+ROUND_ROW = (
+    'turn',
+    'pot',
+    'small_blind_value',
+    'big_blind_value',
+    'small_blind_player',
+    'big_blind_player'
 )
+
+def roundCsvWriter():
+    with open(ROUND_DATA, 'w', newline='') as file:
+        writer = csv.writer(
+            file, delimiter=',',
+            quoting=csv.QUOTE_MINIMAL
+        )
+        while True:
+            _round = (yield)
+            writer.writerow(
+                [_round.__dict__[row] for row in ROUND_ROW]
+            )
+            file.flush()
+
+round_counter = 0
+round_writer = roundCsvWriter()
+round_parser = parser.roundSeriesParser()
+next(round_writer) # prime generator
+next(round_parser) # prime generator
+with open(DATASET, 'r') as file:
+    for line in file:
+        print(line)
+        if not line.strip(): continue
+        round_obj = round_parser.send(line)
+        if round_obj is not None:
+            round_writer.send(round_obj)
+            round_counter += 1
+            
+            if round_counter >= 1:
+                break
+        
     
- 
+    
+    
+    

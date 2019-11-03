@@ -5,9 +5,11 @@ from . import _stream_patterns as pt
 
 class RoundPlayer:
     def __init__(self, player_name, seat, assets):
-        self.seat = seat
         self.name = player_name
+        self.seat = seat
         self.assets = assets
+
+        self.winnings = 0
 
         self.has_folded = False
         self.has_folded_preflop = False
@@ -16,8 +18,6 @@ class RoundPlayer:
         self.sum_of_raises = 0
         self.number_of_calls = 0
         self.number_of_allins = 0
-
-        self.winnings = 0
     
     def addWinnings(self, winnings):
         self.winnings += winnings
@@ -36,28 +36,30 @@ class RoundPlayer:
         if turn == 0: 
             self.has_raised_preflop = True
 
-    def calls(self, amount):
+    def calls(self, turn):
         pass
 
-    def allins(self, amount):
+    def allins(self, amount, turn):
         self.number_of_allins += 1
 
 class RoundParser:
     _turns = ['PREFLOP', 'FLOP', 'TURN', 'RIVER']
 
-    def __init__(self, round_id, time=-1):
-        self.id = round_id
-        self.time_started = time
-
-        self.small_blind_value = -1
-        self.big_blind_value = -1
-        self.button = None
-        self.small_blind_player = None
-        self.big_blind_player = None
+    def __init__(self, round_id):
+        self.id = round_id       
 
         self.players = dict()
         self.turn = 0
+        self.pot = 0
+        self.small_blind = -1
+        self.big_blind = -1
+        
         self.is_finished = False
+
+        # data used only for export
+        self.small_blind_player = None
+        self.big_blind_player = None
+        
     
     def __iadd__(self, player : RoundPlayer):
         self.players[player.name] = player
@@ -70,23 +72,20 @@ class RoundParser:
         for player in self.players.values():
             if player.seat == player_seat:
                 return player
-
+        
     def blinds(self, big_blind, small_blind):
-        self.big_blind = big_blind
-        self.small_blind = small_blind
+        self.big_blind_value = big_blind
+        self.small_blind_value = small_blind
 
     def playerBuyin(self, seat, player_name, buyin):
         player = RoundPlayer(player_name, seat, buyin)
-        self.players[player_name] = player
+        self += player
     
-    def seatButton(self, seat):
-        self.button = self.getPlayerBySeat(seat)
+    def smallBlind(self, player):
+        self.small_blind_player = player.name
     
-    def smallBlind(self, player_name):
-        self.small_blind_player = self[player_name]
-    
-    def bigBlind(self, player_name):
-        self.big_blind_player = self[player_name]
+    def bigBlind(self, player):
+        self.big_blind_player = player.name
     
     def newTurn(self, turn):
         self.turn += 1
@@ -99,45 +98,45 @@ def parseLine(line):
         for pat, pid in pt.out_types[out_type]:
             mch = pat.search(line)
             if mch: return pid, mch
+    return None, None
 
 def parseMatch(pid, mch, rns):
     dic = mch.groupdict()
-    round_ = rns.obj
 
     if pid == OId.RoundStart:
-        rns.obj = RoundParser(
-            round_.id, dic.get('time')
-        )
-    
-    elif pid == OId.RoundEnd:
-        round_.is_finished = True
-
+        pass
+        
     elif pid == OId.RoundId:
-        round_.blinds(*map(
+        rns.obj = RoundParser(rns.id)
+        rns.obj.blinds(*map(
             float, dic.get('blinds').split('/')
         ))
+    
+    elif pid == OId.RoundEnd:
+        rns.obj.is_finished = True
         
     elif pid == OId.SeatJoined:
         user, seat, buyin = map(
             dic.get, ['user', 'seat', 'buyin']
         )
-        round_.playerBuyin(
-            user, seat, float(buyin)
+        rns.obj.playerBuyin(
+            int(seat), user, float(buyin)
         )
         
-    elif pid == OId.SeatButton:
-        round_.seatbutton(int(dic.get('button')))
+    elif pid == OId.SeatButton: pass
         
     elif pid == OId.PlayerBlind:
         blind_type = dic.get('blind_type')
-        player = round_[dic.get('user')]
-        if blind_type == "small": 
-            round_.smallBlind(player)
+        player = rns.obj[dic.get('user')]
+        if blind_type == "small":
+            rns.obj.smallBlind(player)
         elif blind_type == "big":
-            round_.bigBlind(player)
+            rns.obj.bigBlind(player)
+
+    elif pid == OId.PlayerReceivedCard: pass
         
     elif pid == OId.PlayerShowCards:
-        player = round_[dic.get('user')]
+        player = rns.obj[dic.get('user')]
         state = dic.get('state')
         amount = float(dic.get('amount'))
         if state == 'Wins': 
@@ -146,27 +145,33 @@ def parseMatch(pid, mch, rns):
             player.addLosings(amount)
     
     elif pid == OId.PlayerAction:
-        player = round_[dic.get('user')]
+        player = rns.obj[dic.get('user')]
         action = dic.get('action')
-        amount = float(dic.get('amount'))
-        if action == 'folds': 
-            player.folds(round_.turn)
-        elif action == 'calls': player.calls()
-        elif action == 'raises': player.raises(amount)
-        elif action == 'allin': player.allins(amount)
+        amount = dic.get('amount')
+        if action == 'folds':
+            player.folds(rns.obj.turn)
+        elif action == 'calls': 
+            player.calls(rns.obj.turn)
+        elif action == 'raises':
+            player.raises(float(amount), rns.obj.turn)
+        elif action == 'allin': 
+            player.allins(float(amount), rns.obj.turn)
     
     elif pid == OId.NewTurn:
-        round_.newTurn(dic.get('turn_name'))
-    
-    return False
+        rns.obj.newTurn(dic.get('turn_name'))
+
+    elif pid == OId.PotSize:
+        rns.obj.pot = float(dic['pot_size'])
 
 def roundSeriesParser():
-    yield None # priming the generator
     round_ns = SimpleNamespace(obj=None, id=0)
     while True:
         line = (yield)
         pid, mch = parseLine(line)
-        round_finished = parseMatch(pid, mch, round_ns)
-        if round_finished: yield round_ns.obj
-
-round_row = ('round_id', 'time', 'button', 'small_blind', 'big_blind')
+        if pid is None: continue
+        parseMatch(pid, mch, round_ns)
+        if round_ns.obj is None: continue
+        if round_ns.obj.is_finished:
+            yield round_ns.obj
+            round_ns.id += 1
+            round_ns.obj = None
