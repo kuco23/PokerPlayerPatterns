@@ -46,7 +46,7 @@ def roundCsvWriter():
         while True:
             _round = (yield)
             writer.writerow(
-                [_round.__dict__[row] for row in ROUND_ROW]
+                [getattr(_round, row) for row in ROUND_ROW]
             )
             file.flush()
 
@@ -55,19 +55,18 @@ def playerCsvWriter():
         writer = CsvWriter(file)
         while True:
             _round = (yield)
-            round_id = _round.id
             for player in _round:
                 writer.writerow(
-                    [round_id] +
-                    [player.__dict__[row] for row in PLAYER_ROW]
+                    [_round.id] +
+                    [getattr(player, row) for row in PLAYER_ROW]
                 )
             file.flush()
 
-round_writer = roundCsvWriter()
 player_writer = playerCsvWriter()
+round_writer = roundCsvWriter()
 round_parser = parser.roundSeriesParser()
-next(round_writer) # prime generator
 next(player_writer) # prime generator
+next(round_writer) # prime generator
 next(round_parser) # prime generator
 with open(DATASET, 'r') as file:
     for line in file:
@@ -77,7 +76,5 @@ with open(DATASET, 'r') as file:
             round_writer.send(round_obj)
             player_writer.send(round_obj)
             
-            if round_obj.id >= 100:
-                break
-        
-    
+round_writer.close()
+player_writer.close()
