@@ -72,7 +72,7 @@ def extractData(pid, match, ns):
     for key in dct:
         if dct[key] is None: continue
         dct[key] = data_info[pid][key](dct[key])
-
+        
     return namedtuples[pid](*add(
         list(map(
             dct.get, 
@@ -105,6 +105,6 @@ def parseCoro():
                 ns.data = extractData(pid, mch, ns)
             if pid in state_change:
                 updateState(pid, ns)
-        yield ns.data
+        yield pid, ns.data
         ns.data = None
                    
