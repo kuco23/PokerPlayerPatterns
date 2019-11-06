@@ -20,7 +20,8 @@ round_start = re.compile(
 round_id = re.compile(
     r'Game ID: '
     r'(?P<round_id>\d+) '
-    r'(?P<blinds>[\d\./]+) '
+    r'(?P<small_blind>[\d\.]+)/'
+    r'(?P<big_blind>[\d\.]+)'
 )
 round_end = re.compile(
     r'Game ended at: '
@@ -104,20 +105,58 @@ out_types = {
     ]
 }
 
-expected_data = {
-    OutId.RoundStart : ['date', 'time'],
-    OutId.RoundEnd : ['date', 'time'],
-    OutId.RoundId : ['round_id', 'blinds'],
-    OutId.SeatJoined : ['seat', 'user', 'buyin'],
-    OutId.SeatButton : ['seat'],
-    OutId.PlayerBlind : ['user', 'blind_type', 'blind_amount'],
-    OutId.PlayerReceivedCard : ['user'],
-    OutId.PlayerShowCards : [
-        'user', 'hand', 'bets', 
-        'collects', 'state', 'amount'
-    ],
-    OutId.PlayerAction : ['user', 'action', 'amount'],
-    OutId.NewTurn : ['turn_name', 'board', 'new_cards'],
-    OutId.PotSize : ['pot_size'],
-    OutId.BoardShow : ['board']
+data_info = {
+    OutId.RoundStart : {
+        'date': str,
+        'time': str
+    },
+    OutId.RoundEnd : {
+        'date': str,
+        'time': str
+    },
+    OutId.RoundId : {
+        'round_id': str,
+        'small_blind': float,
+        'big_blind': float
+    },
+    OutId.SeatJoined : {
+        'seat': int,
+        'user': str,
+        'buyin': float
+    },
+    OutId.SeatButton : {
+        'seat': int
+    },
+    OutId.PlayerBlind : {
+        'user': str,
+        'blind_type': str,
+        'blind_amount': float
+    },
+    OutId.PlayerReceivedCard : {
+        'user': str
+    },
+    OutId.PlayerShowCards : {
+        'user': str,
+        'hand': str,
+        'bets': float,
+        'collects': float,
+        'state': str,
+        'amount': float
+    },
+    OutId.PlayerAction : {
+        'user': str,
+        'action': str,
+        'amount': float
+    },
+    OutId.NewTurn : {
+        'turn_name': str,
+        'board': str,
+        'new_cards': str
+    },
+    OutId.PotSize : {
+        'pot_size': float
+    },
+    OutId.BoardShow : {
+        'board': str
+    }
 }

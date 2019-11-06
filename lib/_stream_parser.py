@@ -1,106 +1,81 @@
+from operator import add
 from types import SimpleNamespace
+from collections import namedtuple
 
 from ._enums import OutId as OId
 from . import _stream_patterns as pt
+from ._stream_patterns import out_types, data_info
 
-class RoundPlayer:
-    def __init__(self, player_name, seat, assets):
-        self.name = player_name
-        self.seat = seat
-        self.assets = assets
 
-        self.winnings = 0
-        self.stakes = [0] * 5
+data_gather = {
+    OId.RoundId : (
+        ['small_blind', 'big_blind'], 
+        ['id']
+    ),
+    OId.RoundEnd : (
+        [],
+        ['id', 'turn']
+    ),
+    OId.SeatJoined : (
+        ['seat', 'user', 'buyin'], 
+        ['id']
+    ),
+    OId.SeatButton : (
+        ['seat'], 
+        ['id']
+    ),
+    OId.PlayerBlind : (
+        ['user', 'blind_type'], 
+        ['id']
+    ),
+    OId.PlayerShowCards : (
+        ['user', 'collects', 'state', 'amount'],
+        ['id']
+    ),
+    OId.PlayerAction : (
+        ['user', 'action', 'amount'],
+        ['id', 'turn', 'turn_stake']
+    ),
+    OId.PotSize : (
+        ['pot_size'],
+        ['id']
+    )
+}
 
-        self.folded_to = -1
-        self.folded_turn = -1
-        self.raised_turn = -1
-        self.times_raised = 0
-        self.raise_sum = 0
-        self.times_called = 0
-        self.call_sum = 0
-        self.times_allined = 0
-    
-    def addWinnings(self, winnings):
-        self.winnings += winnings
-    
-    def addLosings(self, losings):
-        self.winnings -= losings
-    
-    def folds(self, stake, turn):
-        self.folded_to = stake - self.stakes[turn]
-        self.folded_turn = turn
+state_change = [
+    OId.RoundStart,
+    OId.RoundEnd,
+    OId.SeatJoined,
+    OId.NewTurn,
+    OId.PlayerAction
+]
 
-    def raises(self, amount, turn):
-        self.stakes[turn] += amount
-        self.times_raised += 1
-        self.raise_sum += amount
-        if not self.raised_turn: 
-            self.raised_turn = turn
+namedtuples = dict(zip(
+    data_gather.keys(),
+    map(
+        lambda oid, data: namedtuple(
+            oid.name, add(*data)
+        ),
+        data_gather.keys(),
+        data_gather.values()
+    )
+))
 
-    def calls(self, amount, turn):
-        self.stakes[turn] += amount
-        self.times_called += 1
-        self.call_sum += amount
-
-    def allins(self, amount, turn):
-        self.stakes[turn] += amount
-        self.times_allined += 1
-
-class RoundParser:
-    _turns = ['PREFLOP', 'FLOP', 'TURN', 'RIVER']
-
-    def __init__(self, round_id):
-        self.id = round_id       
-
-        self.players = dict()
-        self.turn = 0
-        self.pot = 0
-        self.small_blind = -1
-        self.big_blind = -1
-
-        # data used only for export
-        self.small_blind_player = None
-        self.big_blind_player = None
+class _Round:
+                   
+    def __init__(self, _id):
+        self.id = _id
+        self.__turn = 0
+        self.turn_stake = 0
 
     @property
-    def turn_max_stake(self):
-        return max(map(
-            lambda p: p.stakes[self.turn],
-            self.players.values()
-        ))
+    def turn(self):
+        return self.__turn
 
-    def __iter__(self):
-        yield from self.players.values()
-            
-    def __iadd__(self, player : RoundPlayer):
-        self.players[player.name] = player
-        return self
-    
-    def __getitem__(self, player_name):
-        return self.players.get(player_name)
-    
-    def getPlayerBySeat(self, player_seat):
-        for player in self.players.values():
-            if player.seat == player_seat:
-                return player
-        
-    def blinds(self, big_blind, small_blind):
-        self.big_blind_value = big_blind
-        self.small_blind_value = small_blind
-
-    def playerBuyin(self, seat, player_name, buyin):
-        player = RoundPlayer(player_name, seat, buyin)
-        self += player
-    
-    def smallBlind(self, player):
-        self.small_blind_player = player.name
-    
-    def bigBlind(self, player):
-        self.big_blind_player = player.name
-    
-    def newTurn(self, turn):
-        self.turn += 1
+    @turn.setter
+    def turn(self, value):
+        self.turn_stake = 0
+        self.__turn = value
 
 
 def parseLine(line):
@@ -112,81 +87,50 @@ def parseLine(line):
             if mch: return pid, mch
     return None, None
 
-def parseMatch(pid, mch, rns):
-    dic = mch.groupdict()
+def extractData(pid, match, ns):
+    dct = match.groupdict()
+    for key in dct:
+        if dct[key] is None: continue
+        dct[key] = data_info[pid][key](dct[key])
 
-    if pid == OId.RoundStart:
-        pass
-        
-    elif pid == OId.RoundId:
-        rns.obj = RoundParser(rns.id)
-        rns.obj.blinds(*map(
-            float, dic.get('blinds').split('/')
+    return namedtuples[pid](*add(
+        list(map(
+            dct.get, 
+            data_gather[pid][0]
+        )),
+        list(map(
+            lambda x: getattr(ns.round, x),
+            data_gather[pid][1]
         ))
-    
+    ))
+
+def updateState(pid, match, ns):
+    dct = match.groupdict()
+    if pid == OId.RoundStart:
+        ns.id += 1
+        ns.round = _Round(ns.id)
+    elif ns.round is None: return
     elif pid == OId.RoundEnd:
-        rns.finished = True
-        
+        ns.round = None
     elif pid == OId.SeatJoined:
-        user, seat, buyin = map(
-            dic.get, ['user', 'seat', 'buyin']
-        )
-        rns.obj.playerBuyin(
-            int(seat), user, float(buyin)
-        )
-        
-    elif pid == OId.SeatButton: pass
-        
-    elif pid == OId.PlayerBlind:
-        blind_type = dic.get('blind_type')
-        player = rns.obj[dic.get('user')]
-        if blind_type == "small":
-            rns.obj.smallBlind(player)
-        elif blind_type == "big":
-            rns.obj.bigBlind(player)
-
-    elif pid == OId.PlayerReceivedCard: pass
-        
-    elif pid == OId.PlayerShowCards:
-        player = rns.obj[dic.get('user')]
-        state = dic.get('state')
-        amount = float(dic.get('amount'))
-        if state == 'Wins': 
-            player.addWinnings(amount)
-        elif state == 'Loses': 
-            player.addLosings(amount)
-    
-    elif pid == OId.PlayerAction:
-        player = rns.obj[dic.get('user')]
-        action = dic.get('action')
-        amount = dic.get('amount')
-        if action == 'folds':
-            stake = rns.obj.turn_max_stake
-            player.folds(stake, rns.obj.turn)
-        elif action == 'calls': 
-            player.calls(float(amount), rns.obj.turn)
-        elif action == 'raises':
-            player.raises(float(amount), rns.obj.turn)
-        elif action == 'allin': 
-            player.allins(float(amount), rns.obj.turn)
-    
+        'generate new player'
     elif pid == OId.NewTurn:
-        rns.obj.newTurn(dic.get('turn_name'))
+        ns.round.turn += 1
+    elif pid == OId.PlayerAction:
+        if dct.get('amount'):
+            amount = float(dct.get('amount'))
+            ns.round.turn_stake += amount
+    elif pid == OId.PlayerBlind:
+        ns.round.turn_stake += dct.get('amount')
 
-    elif pid == OId.PotSize:
-        rns.obj.pot = float(dic['pot_size'])
-
-def roundSeriesParser():
-    round_ns = SimpleNamespace(
-        obj=None, id=0, finished=False
-    )
+def parseCoro():
+    ns = SimpleNamespace(round=None, id=0)
     while True:
         line = (yield)
         pid, mch = parseLine(line)
         if pid is None: continue
-        parseMatch(pid, mch, round_ns)
-        if round_ns.obj is not None and round_ns.finished:
-            yield round_ns.obj
-            round_ns.id += 1
-            round_ns.obj = None
-            round_ns.finished = False
+        if pid in data_gather and ns.round: 
+            yield extractData(pid, mch, ns)
+        if pid in state_change:
+            updateState(pid, mch, ns)
+                   
