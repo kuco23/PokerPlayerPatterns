@@ -14,5 +14,9 @@ with open(DATASET_PATH, 'r') as file:
     for line in file:
         if not line.strip(): continue
         tup = stream_parser.send(line)
-        if tup: print(tup)
-        
+        next(stream_parser)
+        if tup: 
+            print('CACHE', line)
+            print(tup)
+        else: print('NOCACHE', line)
+        input()

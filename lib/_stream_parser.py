@@ -10,35 +10,31 @@ from ._stream_patterns import out_types, data_info
 data_gather = {
     OId.RoundId : (
         ['small_blind', 'big_blind'], 
-        ['id']
+        ['round_id']
     ),
     OId.RoundEnd : (
         [],
-        ['id', 'turn']
+        ['round_id', 'turn']
     ),
     OId.SeatJoined : (
         ['seat', 'user', 'buyin'], 
-        ['id']
-    ),
-    OId.SeatButton : (
-        ['seat'], 
-        ['id']
+        ['round_id']
     ),
     OId.PlayerBlind : (
         ['user', 'blind_type'], 
-        ['id']
+        ['round_id']
     ),
     OId.PlayerShowCards : (
         ['user', 'collects', 'state', 'amount'],
-        ['id']
+        ['round_id']
     ),
     OId.PlayerAction : (
         ['user', 'action', 'amount'],
-        ['id', 'turn', 'turn_stake']
+        ['round_id', 'turn']
     ),
     OId.PotSize : (
         ['pot_size'],
-        ['id']
+        ['round_id']
     )
 }
 
@@ -46,6 +42,7 @@ state_change = [
     OId.RoundStart,
     OId.RoundEnd,
     OId.SeatJoined,
+    OId.PlayerBlind,
     OId.NewTurn,
     OId.PlayerAction
 ]
@@ -60,23 +57,6 @@ namedtuples = dict(zip(
         data_gather.values()
     )
 ))
-
-class _Round:
-                   
-    def __init__(self, _id):
-        self.id = _id
-        self.__turn = 0
-        self.turn_stake = 0
-
-    @property
-    def turn(self):
-        return self.__turn
-
-    @turn.setter
-    def turn(self, value):
-        self.turn_stake = 0
-        self.__turn = value
-
 
 def parseLine(line):
     out_type = pt.out_type.search(line)
@@ -99,38 +79,32 @@ def extractData(pid, match, ns):
             data_gather[pid][0]
         )),
         list(map(
-            lambda x: getattr(ns.round, x),
+            lambda x: getattr(ns, x),
             data_gather[pid][1]
         ))
     ))
 
-def updateState(pid, match, ns):
-    dct = match.groupdict()
+def updateState(pid, ns):
     if pid == OId.RoundStart:
-        ns.id += 1
-        ns.round = _Round(ns.id)
-    elif ns.round is None: return
-    elif pid == OId.RoundEnd:
-        ns.round = None
-    elif pid == OId.SeatJoined:
-        'generate new player'
-    elif pid == OId.NewTurn:
-        ns.round.turn += 1
-    elif pid == OId.PlayerAction:
-        if dct.get('amount'):
-            amount = float(dct.get('amount'))
-            ns.round.turn_stake += amount
-    elif pid == OId.PlayerBlind:
-        ns.round.turn_stake += dct.get('amount')
+        ns.round_id += 1
+        ns.round = True
+        ns.turn = 0
+    elif not ns.round: return
+    elif pid == OId.RoundEnd: ns.round = False
+    elif pid == OId.NewTurn: ns.turn += 1
 
 def parseCoro():
-    ns = SimpleNamespace(round=None, id=0)
+    ns = SimpleNamespace(
+        round=False, turn=0, round_id=0, data=None
+    )
     while True:
-        line = (yield)
+        line = yield
         pid, mch = parseLine(line)
-        if pid is None: continue
-        if pid in data_gather and ns.round: 
-            yield extractData(pid, mch, ns)
-        if pid in state_change:
-            updateState(pid, mch, ns)
+        if pid is not None:
+            if pid in data_gather and ns.round: 
+                ns.data = extractData(pid, mch, ns)
+            if pid in state_change:
+                updateState(pid, ns)
+        yield ns.data
+        ns.data = None
                    

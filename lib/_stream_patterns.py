@@ -40,7 +40,7 @@ seat_button = re.compile(
 player_blind = re.compile(
     r'Player (?P<user>.+?) '
     r'has (?P<blind_type>\w+) blind '
-    r'\((?P<blind_amount>[\d\.]+)\)'
+    r'\((?P<amount>[\d\.]+)\)'
 )
 player_received_card = re.compile(
     r'Player (?P<user>.+?) '
@@ -130,7 +130,7 @@ data_info = {
     OutId.PlayerBlind : {
         'user': str,
         'blind_type': str,
-        'blind_amount': float
+        'amount': float
     },
     OutId.PlayerReceivedCard : {
         'user': str
