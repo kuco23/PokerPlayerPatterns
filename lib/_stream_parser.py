@@ -67,7 +67,7 @@ def parseLine(line):
             if mch: return pid, mch
     return None, None
 
-def extractData(pid, match, ns):
+def extractData(pid, match, context):
     dct = match.groupdict()
     for key in dct:
         if dct[key] is None: continue
@@ -79,32 +79,32 @@ def extractData(pid, match, ns):
             data_gather[pid][0]
         )),
         list(map(
-            lambda x: getattr(ns, x),
+            lambda x: getattr(context, x),
             data_gather[pid][1]
         ))
     ))
 
-def updateState(pid, ns):
+def updateState(pid, context):
     if pid == OId.RoundStart:
-        ns.round_id += 1
-        ns.round = True
-        ns.turn = 0
-    elif not ns.round: return
-    elif pid == OId.RoundEnd: ns.round = False
-    elif pid == OId.NewTurn: ns.turn += 1
+        context.round_id += 1
+        context.round = True
+        context.turn = 0
+    elif not context.round: return
+    elif pid == OId.RoundEnd: context.round = False
+    elif pid == OId.NewTurn: context.turn += 1
 
 def parseCoro():
-    ns = SimpleNamespace(
+    context = SimpleNamespace(
         round=False, turn=0, round_id=0, data=None
     )
     while True:
         line = yield
         pid, mch = parseLine(line)
         if pid is not None:
-            if pid in data_gather and ns.round: 
-                ns.data = extractData(pid, mch, ns)
+            if pid in data_gather and context.round: 
+                context.data = extractData(pid, mch, context)
             if pid in state_change:
-                updateState(pid, ns)
-        yield pid, ns.data
-        ns.data = None
+                updateState(pid, context)
+        yield pid, context.data
+        context.data = None
                    

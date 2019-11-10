@@ -5,6 +5,7 @@ _actions = '|'.join([
     'folds',
     'calls',
     'checks',
+    'bets',
     'raises',
     'allin'
 ])
