@@ -84,7 +84,7 @@ def extractData(pid, match, context):
         ))
     ))
 
-def updateState(pid, context):
+def updateContext(pid, context):
     if pid == OId.RoundStart:
         context.round_id += 1
         context.round = True
@@ -97,14 +97,13 @@ def parseCoro():
     context = SimpleNamespace(
         round=False, turn=0, round_id=0, data=None
     )
+    pid = None
     while True:
-        line = yield
-        pid, mch = parseLine(line)
-        if pid is not None:
-            if pid in data_gather and context.round: 
-                context.data = extractData(pid, mch, context)
-            if pid in state_change:
-                updateState(pid, context)
-        yield pid, context.data
+        line = yield (pid, context.data)
         context.data = None
+        pid, mch = parseLine(line)
+        if pid in data_gather and context.round:
+            context.data = extractData(pid, mch, context)
+        if pid in state_change:
+            updateContext(pid, context)
                    

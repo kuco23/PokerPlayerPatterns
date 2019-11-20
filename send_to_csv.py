@@ -33,8 +33,7 @@ with open(DATASET_PATH, 'r') as file:
     for line in file:
         if not line.strip(): continue
         pid, data = stream_parser.send(line)
-        next(stream_parser)
-        if data is not None: 
+        if data is not None:
             csv_writers[pid].send(data)
 
 for writer in csv_writers.values():
