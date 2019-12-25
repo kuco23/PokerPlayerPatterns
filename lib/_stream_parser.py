@@ -7,7 +7,7 @@ from . import _stream_patterns as pt
 from ._stream_patterns import out_types, data_info
 
 
-data_gather = {
+gather = {
     OId.RoundId : (
         ['small_blind', 'big_blind'], 
         ['round_id']
@@ -41,20 +41,17 @@ data_gather = {
 state_change = [
     OId.RoundStart,
     OId.RoundEnd,
-    OId.SeatJoined,
-    OId.PlayerBlind,
-    OId.NewTurn,
-    OId.PlayerAction
+    OId.NewTurn
 ]
 
 namedtuples = dict(zip(
-    data_gather.keys(),
+    gather.keys(),
     map(
         lambda oid, data: namedtuple(
             oid.name, add(*data)
         ),
-        data_gather.keys(),
-        data_gather.values()
+        gather.keys(),
+        gather.values()
     )
 ))
 
@@ -76,11 +73,11 @@ def extractData(pid, match, context):
     return namedtuples[pid](*add(
         list(map(
             dct.get, 
-            data_gather[pid][0]
+            gather[pid][0]
         )),
         list(map(
             lambda x: getattr(context, x),
-            data_gather[pid][1]
+            gather[pid][1]
         ))
     ))
 
@@ -102,7 +99,7 @@ def parseCoro():
         line = yield (pid, context.data)
         context.data = None
         pid, mch = parseLine(line)
-        if pid in data_gather and context.round:
+        if pid in gather and context.round:
             context.data = extractData(pid, mch, context)
         if pid in state_change:
             updateContext(pid, context)
