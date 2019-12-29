@@ -7,17 +7,14 @@ from . import _stream_patterns as pt
 from ._stream_patterns import out_types, data_info
 
 
+# data to gather from regex parser / context
 gather = {
     OId.RoundId : (
         ['small_blind', 'big_blind'], 
         ['round_id']
     ),
-    OId.RoundEnd : (
-        [],
-        ['round_id', 'turn']
-    ),
     OId.SeatJoined : (
-        ['seat', 'user', 'buyin'], 
+        ['user', 'buyin'], 
         ['round_id']
     ),
     OId.PlayerBlind : (
@@ -30,7 +27,7 @@ gather = {
     ),
     OId.PlayerAction : (
         ['user', 'action', 'amount'],
-        ['round_id', 'turn']
+        ['round_id', 'turn', 'action_order']
     ),
     OId.PotSize : (
         ['pot_size'],
@@ -41,7 +38,8 @@ gather = {
 state_change = [
     OId.RoundStart,
     OId.RoundEnd,
-    OId.NewTurn
+    OId.NewTurn,
+    OId.PlayerAction
 ]
 
 namedtuples = dict(zip(
@@ -69,7 +67,6 @@ def extractData(pid, match, context):
     for key in dct:
         if dct[key] is None: continue
         dct[key] = data_info[pid][key](dct[key])
-        
     return namedtuples[pid](*add(
         list(map(
             dct.get, 
@@ -86,13 +83,17 @@ def updateContext(pid, context):
         context.round_id += 1
         context.round = True
         context.turn = 0
+        context.action_order = 0
     elif not context.round: return
     elif pid == OId.RoundEnd: context.round = False
     elif pid == OId.NewTurn: context.turn += 1
+    elif pid == OId.PlayerAction: context.action_order += 1
 
 def parseCoro():
     context = SimpleNamespace(
-        round=False, turn=0, round_id=0, data=None
+        round=False, turn=0,
+        round_id=0, action_order=0,
+        data=None
     )
     pid = None
     while True:

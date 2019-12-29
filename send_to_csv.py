@@ -1,38 +1,41 @@
 from operator import add
 from pathlib import Path
+import os
 import csv
 
 from lib import parser
 
-DATA_LOAD = Path.cwd() / 'datasets'
-DATA_SAVE = Path.cwd() / 'sample'
-DATA_PATH = DATA_LOAD / 'poker_games.txt'
+FOLDER_NAME = 'parsed_data'
+if not os.path.isdir(FOLDER_NAME):
+    os.mkdir(FOLDER_NAME)
+    
+DATA_PATH = Path.cwd() / 'poker_games.txt'
+DATA_SAVE = Path.cwd() / FOLDER_NAME
 
 gather_enums = parser.gather.keys()
 gather_fields = [add(*t) for t in parser.gather.values()]
-csv_paths = [
-    DATA_SAVE / f'{nm.name.lower()}.csv'
-    for nm in gather_enums
-]
+csv_names = [f'{nm.name.lower()}.csv' for nm in gather_enums]
+csv_paths = [DATA_SAVE / csv_name for csv_name in csv_names]
 
-def csvWriterCoro(filepath, fields):
+def csvWriterCoro(filepath):
     filepath.touch()
     with open(filepath, 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(fields)
         while True:
             row = yield
             writer.writerow(row)
 
 csv_writers = dict(zip(
     gather_enums,
-    map(csvWriterCoro, csv_paths, gather_fields)
+    map(csvWriterCoro, csv_paths)
 ))
-for writer in csv_writers.values():
-    next(writer) # priming generators
+
+for writer, fields in zip(csv_writers.values(), gather_fields):
+    next(writer) # priming generator
+    writer.send(fields) # write column names
 
 stream_parser = parser.parseCoro()
-next(stream_parser)
+next(stream_parser) # priming generator
 with open(DATA_PATH, 'r') as file:
     for line in file:
         if not line.strip(): continue

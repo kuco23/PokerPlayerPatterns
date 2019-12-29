@@ -5,6 +5,6 @@ __pycache__
 *.txt
 *.exe
 *.csv
-sample
-datasets
+poker_games.txt
+parsed_data
 tidy_data
