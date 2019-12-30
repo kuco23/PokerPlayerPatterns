@@ -6,7 +6,7 @@ import numpy as np
 from lib import parser
 
 if not os.path.isdir('tidy_data'):
-    os.makedir('tidy_data')
+    os.mkdir('tidy_data')
 
 nrow = 10**10
 import_from = Path.cwd() / 'parsed_data'
@@ -26,14 +26,6 @@ pd.DataFrame(
         'turn_id': [0, 1, 2, 3]
     }
 ).to_csv(f'{export}/turn_ids.csv', index=False)
-
-
-pd.DataFrame(
-    data = {
-        'blind_type': ['small_blind', 'big_blind'],
-        'blind_type_id': [0, 1]
-    }
-).to_csv(f'{export}/blind_type_ids.csv', index=False)
 
 
 pd.DataFrame(
@@ -76,13 +68,11 @@ pd.merge(
 ).to_csv(f'{export}/buyins.csv', index=False)
 
 
-rounds.melt(
+round_blinds = rounds.melt(
     id_vars='round_id', var_name='blind_type_id'
 ).replace(
     ['small_blind', 'big_blind'], [0, 1]
-).to_csv(f'{export}/round_blinds.csv', index=False)
-
-
+)
 pd.merge(
     player_df, blinds,
     how='outer', on='user'
@@ -90,8 +80,13 @@ pd.merge(
     columns=['user']
 ).replace(
     ['small', 'big'], [0, 1]
-).to_csv(f'{export}/user_blinds.csv', index=False)
-    
+).rename(
+    columns={'blind_type': 'blind_type_id'}
+).merge(
+    round_blinds,
+    how='outer', on=['blind_type_id', 'round_id']
+).to_csv(f'{export}/blinds.csv', index=False)
+
 
 pd.merge(
     cardshow, player_df,
