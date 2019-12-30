@@ -22,7 +22,7 @@ gather = {
         ['round_id']
     ),
     OId.PlayerShowCards : (
-        ['user', 'collects', 'state', 'amount'],
+        ['user', 'collects', 'state', 'amount', 'bets'],
         ['round_id']
     ),
     OId.PlayerAction : (

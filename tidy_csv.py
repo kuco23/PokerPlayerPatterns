@@ -3,37 +3,30 @@ from pathlib import Path
 
 import pandas as pd
 import numpy as np
+
 from lib import parser
+from lib import TurnId
 
 if not os.path.isdir('tidy_data'):
     os.mkdir('tidy_data')
 
-nrow = 10**10
 import_from = Path.cwd() / 'parsed_data'
 export = Path.cwd() / 'tidy_data'
 
-actions = pd.read_csv(import_from / 'playeraction.csv', nrows=nrow)
-buyins = pd.read_csv(import_from / 'seatjoined.csv', nrows=nrow)
-blinds = pd.read_csv(import_from / 'playerblind.csv', nrows=nrow)
-rounds = pd.read_csv(import_from / 'roundid.csv', nrows=nrow)
-cardshow = pd.read_csv(import_from / 'playershowcards.csv', nrows=nrow)
-potsize = pd.read_csv(import_from / 'potsize.csv', nrows=nrow)
+actions = pd.read_csv(import_from / 'playeraction.csv')
+buyins = pd.read_csv(import_from / 'seatjoined.csv')
+blinds = pd.read_csv(import_from / 'playerblind.csv')
+rounds = pd.read_csv(import_from / 'roundid.csv')
+cardshow = pd.read_csv(import_from / 'playershowcards.csv')
+potsize = pd.read_csv(import_from / 'potsize.csv')
 
 
 pd.DataFrame(
     data = {
-        'turn_name': ['preflop', 'flop', 'turn', 'river'],
-        'turn_id': [0, 1, 2, 3]
+        'turn_name': [turn.name.lower() for turn in TurnId],
+        'turn_id': list(map(int, TurnId))
     }
 ).to_csv(f'{export}/turn_ids.csv', index=False)
-
-
-pd.DataFrame(
-    data = {
-        'state_name': ['Loses', 'Wins'],
-        'state_id': [0, 1]
-    }
-).to_csv(f'{export}/state_name_ids.csv', index=False)
 
 
 action_ids = pd.DataFrame(
@@ -42,9 +35,7 @@ action_ids = pd.DataFrame(
             'folds', 'calls', 'raises',
             'checks', 'bets', 'allin'
         ],
-        'action_id': [
-            0, 1, 2, 3, 4, 5
-        ]
+        'action_id': [0, 1, 2, 3, 4, 5]
     }
 )
 action_ids.to_csv(f'{export}/action_ids.csv', index=False)
@@ -88,15 +79,19 @@ pd.merge(
 ).to_csv(f'{export}/blinds.csv', index=False)
 
 
-pd.merge(
-    cardshow, player_df,
+cardshow.amount = (
+    cardshow.amount * 
+    cardshow.state.replace(
+        ['Loses', 'Wins'], [-1, 1]
+    )
+)
+cardshow.drop(
+    columns=['state']
+).merge(
+    player_df,
     how='outer', on='user'
 ).dropna().drop(
     columns=['user']
-).replace(
-    ['Loses', 'Wins'], [0, 1]
-).rename(
-    columns={'state': 'state_id'}
 ).to_csv(f'{export}/cardshow.csv', index=False)
 
 

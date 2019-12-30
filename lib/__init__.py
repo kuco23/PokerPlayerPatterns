@@ -9,6 +9,6 @@
 ╚═══════════════════════════════════════════╝ 
 """
 
-from . import _enums as enums
+from ._enums import OutId, ActionId, TurnId
 from . import _stream_patterns as patterns
 from . import _stream_parser as parser

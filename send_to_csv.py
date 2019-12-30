@@ -6,15 +6,15 @@ import csv
 from lib import parser
 
 FOLDER_NAME = 'parsed_data'
+DATA_LOAD = Path.cwd() / 'poker_games.txt'
+DATA_SAVE = Path.cwd() / FOLDER_NAME
+
 if not os.path.isdir(FOLDER_NAME):
     os.mkdir(FOLDER_NAME)
-    
-DATA_PATH = Path.cwd() / 'poker_games.txt'
-DATA_SAVE = Path.cwd() / FOLDER_NAME
 
 gather_enums = parser.gather.keys()
 gather_fields = [add(*t) for t in parser.gather.values()]
-csv_names = [f'{nm.name.lower()}.csv' for nm in gather_enums]
+csv_names = [nm.name.lower() + '.csv' for nm in gather_enums]
 csv_paths = [DATA_SAVE / csv_name for csv_name in csv_names]
 
 def csvWriterCoro(filepath):
@@ -36,7 +36,7 @@ for writer, fields in zip(csv_writers.values(), gather_fields):
 
 stream_parser = parser.parseCoro()
 next(stream_parser) # priming generator
-with open(DATA_PATH, 'r') as file:
+with open(DATA_LOAD, 'r') as file:
     for line in file:
         if not line.strip(): continue
         pid, data = stream_parser.send(line)
