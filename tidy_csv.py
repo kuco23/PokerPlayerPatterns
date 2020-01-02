@@ -41,22 +41,23 @@ action_ids = pd.DataFrame(
 action_ids.to_csv(f'{export}/action_ids.csv', index=False)
 
 
-unique_players = buyins['user'].unique()
-player_df = pd.DataFrame(
+unique_users = buyins['user'].unique()
+user_df = pd.DataFrame(
     data = {
-        'user': unique_players,
-        'user_id': range(len(unique_players))
+        'user': unique_users,
+        'user_id': range(len(unique_users))
     }
 )
-player_df.to_csv(f'{export}/user_ids.csv', index=False)
+user_df.to_csv(f'{export}/user_ids.csv', index=False)
 
 
-pd.merge(
-    buyins, player_df,
+buyins_df = pd.merge(
+    buyins, user_df,
     how='outer', on='user'
 ).dropna().drop(
     columns=['user']
-).to_csv(f'{export}/buyins.csv', index=False)
+)
+buyins_df.to_csv(f'{export}/buyins.csv', index=False)
 
 
 round_blinds = rounds.melt(
@@ -65,7 +66,7 @@ round_blinds = rounds.melt(
     ['small_blind', 'big_blind'], [0, 1]
 )
 pd.merge(
-    player_df, blinds,
+    user_df, blinds,
     how='outer', on='user'
 ).dropna().drop(
     columns=['user']
@@ -88,7 +89,7 @@ cardshow.amount = (
 cardshow.drop(
     columns=['state']
 ).merge(
-    player_df,
+    user_df,
     how='outer', on='user'
 ).dropna().drop(
     columns=['user']
@@ -96,17 +97,40 @@ cardshow.drop(
 
 
 actions.amount = actions.amount.replace(pd.NaT, 0)
-pd.merge(
-    actions, player_df,
+action_df = pd.merge(
+    actions, user_df,
     how='outer', on='user',
 ).dropna().drop(
     columns=['user']
 ).merge(
     action_ids,
-    how='outer', left_on='action', right_on='action_name'
+    how='outer',
+    left_on='action', right_on='action_name'
 ).dropna().drop(
     columns=['action', 'action_name']
-).to_csv(f'{export}/actions.csv', index=False)
+)
+# Some players bought in without taking any actions.
+# This will be treated as a fold.
+active_users = set(action_df.user_id.unique())
+inactive_users = [
+    user for user in user_df.user_id
+    if user not in active_users
+]
+inactive_rounds = [
+    buyins_df[
+        buyins_df.user_id == user_id
+    ].round_id.values[0]
+    for user_id in inactive_users
+]
+default_rows = [
+    [0, round_id, 0, -1, user_id, 0]
+    for user_id, round_id in zip(
+        inactive_users, inactive_rounds
+    )
+]
+action_df.append(pd.DataFrame(
+    default_rows, columns = list(action_df.columns)
+)).to_csv(f'{export}/actions.csv', index=False)
 
 
 potsize.to_csv(f'{export}/potsize.csv', index=False)
