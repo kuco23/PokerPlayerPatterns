@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 from lib import parser
-from lib import TurnId
+from lib import TurnId, ActionId
 
 if not os.path.isdir('tidy_data'):
     os.mkdir('tidy_data')
@@ -31,11 +31,8 @@ pd.DataFrame(
 
 action_ids = pd.DataFrame(
     data = {
-        'action_name': [
-            'folds', 'calls', 'raises',
-            'checks', 'bets', 'allin'
-        ],
-        'action_id': [0, 1, 2, 3, 4, 5]
+        'action_name': [action.name.lower() for action in ActionId],
+        'action_id': list(map(int, ActionId))
     }
 )
 action_ids.to_csv(f'{export}/action_ids.csv', index=False)
@@ -97,17 +94,16 @@ cardshow.drop(
 
 
 actions.amount = actions.amount.replace(pd.NaT, 0)
-action_df = pd.merge(
-    actions, user_df,
-    how='outer', on='user',
+action_df = actions.replace([
+    'folds', 'calls', 'raises', 
+    'checks', 'bets', 'allin'
+    ],[0, 1, 2, 3, 4, 5]
+).rename(
+    columns = {'action': 'action_id'}
+).merge(
+    user_df, 'outer', 'user'
 ).dropna().drop(
     columns=['user']
-).merge(
-    action_ids,
-    how='outer',
-    left_on='action', right_on='action_name'
-).dropna().drop(
-    columns=['action', 'action_name']
 )
 # Some players bought in without taking any actions.
 # This will be treated as a fold.
@@ -123,7 +119,7 @@ inactive_rounds = [
     for user_id in inactive_users
 ]
 default_rows = [
-    [0, round_id, 0, -1, user_id, 0]
+    [0, 0, round_id, 0, -1, user_id]
     for user_id, round_id in zip(
         inactive_users, inactive_rounds
     )
