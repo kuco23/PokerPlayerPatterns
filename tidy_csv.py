@@ -99,7 +99,10 @@ action_df = actions.replace([
     'checks', 'bets', 'allin'
     ],[0, 1, 2, 3, 4, 5]
 ).rename(
-    columns = {'action': 'action_id'}
+    columns = {
+        'action': 'action_id',
+        'turn': 'turn_id'
+    }
 ).merge(
     user_df, 'outer', 'user'
 ).dropna().drop(
