@@ -15,6 +15,7 @@ export = Path.cwd() / 'tidy_data'
 
 actions = pd.read_csv(import_from / 'playeraction.csv')
 buyins = pd.read_csv(import_from / 'seatjoined.csv')
+received = pd.read_csv(import_from / 'playerreceivedcard.csv')
 blinds = pd.read_csv(import_from / 'playerblind.csv')
 rounds = pd.read_csv(import_from / 'roundid.csv')
 cardshow = pd.read_csv(import_from / 'playershowcards.csv')
@@ -63,8 +64,7 @@ round_blinds = rounds.melt(
     ['small_blind', 'big_blind'], [0, 1]
 )
 pd.merge(
-    user_df, blinds,
-    how='outer', on='user'
+    user_df, blinds, 'outer', 'user'
 ).dropna().drop(
     columns=['user']
 ).replace(
@@ -75,6 +75,37 @@ pd.merge(
     round_blinds,
     how='outer', on=['blind_type_id', 'round_id']
 ).to_csv(f'{export}/blinds.csv', index=False)
+
+
+convert_suit = dict(zip(
+    ['h', 'd', 'c', 's'],
+    ['♠', '♣', '♦', '♥']
+))
+convert_value = dict(zip(
+    list(map(str, range(2, 11))) + ['J', 'Q', 'K', 'A'],
+    list(map(str, range(2, 11))) + ['J', 'Q', 'K', 'A']
+))
+def encodeCard(card):
+    v = convert_value[card[:-1]]
+    s = convert_suit[card[-1]]
+    return v + s
+
+pd.merge(
+    user_df, received, 'outer', 'user'
+).dropna().drop(
+    columns=['user']
+).groupby(
+    ['round_id', 'user_id']
+).apply(
+    lambda df: pd.DataFrame(
+        data = {
+            'card1': [encodeCard(list(df.card)[0])],
+            'card2': [encodeCard(list(df.card)[1])],
+        }
+    )
+).reset_index().drop(
+    columns=['level_2']
+).to_csv(f'{export}/received_cards.csv', index=False)
 
 
 cardshow.amount = (

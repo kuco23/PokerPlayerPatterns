@@ -45,7 +45,7 @@ player_blind = re.compile(
 )
 player_received_card = re.compile(
     r'Player (?P<user>.+?) '
-    r'received(?: a)? card'
+    r'received card: \[(?P<card>[\w\d]{2,3})\]'
 )
 player_action = re.compile(
     r'Player (?P<user>.+?) '
@@ -134,7 +134,8 @@ data_info = {
         'amount': float
     },
     OutId.PlayerReceivedCard : {
-        'user': str
+        'user': str,
+        'card': str
     },
     OutId.PlayerShowCards : {
         'user': str,

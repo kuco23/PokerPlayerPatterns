@@ -7,7 +7,9 @@ from . import _stream_patterns as pt
 from ._stream_patterns import out_types, data_info
 
 
-# data to gather from regex parser / context
+# data to gather from regex parser / context,
+# namedtuples are created to represent rows
+# in tables, each for every schema key
 gather = {
     OId.RoundId : (
         ['small_blind', 'big_blind'], 
@@ -15,6 +17,10 @@ gather = {
     ),
     OId.SeatJoined : (
         ['user', 'buyin'], 
+        ['round_id']
+    ),
+    OId.PlayerReceivedCard: (
+        ['user', 'card'],
         ['round_id']
     ),
     OId.PlayerBlind : (
