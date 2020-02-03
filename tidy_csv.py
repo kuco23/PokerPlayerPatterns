@@ -98,10 +98,13 @@ pd.merge(
     ['round_id', 'user_id']
 ).apply(
     lambda df: pd.DataFrame(
-        data = {
-            'card1': [encodeCard(list(df.card)[0])],
-            'card2': [encodeCard(list(df.card)[1])],
-        }
+        data = dict(zip(
+            ['card1', 'card2'],
+            sorted([
+                [encodeCard(list(df.card)[0])],
+                [encodeCard(list(df.card)[1])]
+            ])
+        ))
     )
 ).reset_index().drop(
     columns=['level_2']
