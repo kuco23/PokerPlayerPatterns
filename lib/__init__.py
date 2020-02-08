@@ -10,6 +10,8 @@
 """
 
 from ._enums import OutId, ActionId, TurnId, Hand
-from ._handparser import HandParser, getHand
+from ._handparser import (
+    HandParser, getHand, flushOut, straightOuts
+)
 from . import _stream_patterns as patterns
 from . import _stream_parser as parser

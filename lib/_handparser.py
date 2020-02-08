@@ -1,4 +1,5 @@
 from bisect import insort
+from collections import Counter
 from ._enums import Hand, Value, Suit
 
 sdic = dict(zip(['♠', '♣', '♦', '♥'], range(4)))
@@ -15,6 +16,31 @@ def getHand(cards):
     parser = HandParser(encodeCards(cards))
     parser.parse()
     return parser.handenum
+
+def straightOuts(cards):
+    cards = encodeCards(cards)
+    
+    indexes = [0] * 14
+    for i in list(zip(*cards))[0]:
+        indexes[i] = 1
+
+    counter, outs = 0, []
+    for i, j in enumerate(indexes):
+        if 14 - i < 5 - counter: break
+        if j: counter += 1
+        else:
+            for k in indexes[(i+1):(i+5-counter)]:
+                if not k: break
+            else: outs.append(i)
+            counter = 0
+
+    return len(outs)
+
+def flushOut(cards):
+    cards = encodeCards(cards)
+    c = Counter(list(zip(*cards))[1])
+    return int(max(c.values()) == 4)
+    
 
 class HandParser:
     __slots__ = [
@@ -270,46 +296,3 @@ class HandParser:
         self._setHand()
         self._setKickers()
 
-
-class HandParserGroup(list):
-
-    def __repr__(self):
-        return f"HandParserGroup{self}"
-
-    def getGroupKickers(self):
-        win = max(self)
-        los = [hand for hand in self if hand < win]
-        if not los: return []
-        
-        mlos = max(los)
-        if win.handenum != mlos.handenum: return []
-        
-        w_base, w_kick, ml_base, ml_kick = map(
-            lambda cards: next(zip(*cards)),
-            (win.handbasecards, win.kickercards,
-             mlos.handbasecards, mlos.kickercards)
-        )
-
-        fivebased = [
-            Hand.STRAIGHT,
-            Hand.FLUSH,
-            Hand.FULLHOUSE,
-            Hand.STRAIGHTFLUSH
-        ]
-                     
-        if win.handenum not in fivebased:
-            if w_base != ml_base: return []
-            else: kicker_search = zip(w_kick, ml_kick)
-
-        elif win.handenum == Hand.FLUSH:
-            if w_base[0] != ml_base[0]: return []
-            kicker_search = zip(w_base[1:], ml_base[1:])
-
-        else: return []
-
-        kickers = []
-        for w_val, l_val in kicker_search:
-            kickers.append(w_val)
-            if w_val > l_val: return kickers
-
-        return []
