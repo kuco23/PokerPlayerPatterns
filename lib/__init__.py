@@ -9,6 +9,7 @@
 ╚═══════════════════════════════════════════╝ 
 """
 
-from ._enums import OutId, ActionId, TurnId
+from ._enums import OutId, ActionId, TurnId, Hand
+from ._handparser import HandParser, getHand
 from . import _stream_patterns as patterns
 from . import _stream_parser as parser

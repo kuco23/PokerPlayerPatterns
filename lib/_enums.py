@@ -48,3 +48,14 @@ class Value(IntEnum):
     QUEEN = 10
     KING = 11
     ACE = 12
+
+class Hand(IntEnum):
+    HIGHCARD = 0
+    ONEPAIR = 1
+    TWOPAIR = 2
+    THREEOFAKIND = 3
+    STRAIGHT = 4
+    FLUSH = 5
+    FULLHOUSE = 6
+    FOUROFAKIND = 7
+    STRAIGHTFLUSH = 8

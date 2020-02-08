@@ -20,6 +20,21 @@ blinds = pd.read_csv(import_from / 'playerblind.csv')
 rounds = pd.read_csv(import_from / 'roundid.csv')
 cardshow = pd.read_csv(import_from / 'playershowcards.csv')
 potsize = pd.read_csv(import_from / 'potsize.csv')
+newturn = pd.read_csv(import_from / 'newturn.csv')
+
+
+convert_suit = dict(zip(
+    ['h', 'd', 'c', 's'],
+    ['♠', '♣', '♦', '♥']
+))
+convert_value = dict(zip(
+    list(map(str, range(2, 11))) + ['J', 'Q', 'K', 'A'],
+    list(map(str, range(2, 11))) + ['J', 'Q', 'K', 'A']
+))
+def encodeCard(card):
+    v = convert_value[card[:-1]]
+    s = convert_suit[card[-1]]
+    return v + s
 
 
 pd.DataFrame(
@@ -76,19 +91,6 @@ pd.merge(
     how='outer', on=['blind_type_id', 'round_id']
 ).to_csv(f'{export}/blinds.csv', index=False)
 
-
-convert_suit = dict(zip(
-    ['h', 'd', 'c', 's'],
-    ['♠', '♣', '♦', '♥']
-))
-convert_value = dict(zip(
-    list(map(str, range(2, 11))) + ['J', 'Q', 'K', 'A'],
-    list(map(str, range(2, 11))) + ['J', 'Q', 'K', 'A']
-))
-def encodeCard(card):
-    v = convert_value[card[:-1]]
-    s = convert_suit[card[-1]]
-    return v + s
 
 pd.merge(
     user_df, received, 'outer', 'user'
@@ -164,6 +166,17 @@ default_rows = [
 action_df.append(pd.DataFrame(
     default_rows, columns = list(action_df.columns)
 )).to_csv(f'{export}/actions.csv', index=False)
+
+
+newturn.new_card = newturn.new_card.replace(pd.NaT, '')
+newturn.assign(
+    board = [
+        ' '.join(encodeCard(c) for c in cards.split())
+        for cards in (newturn.board + ' ' + newturn.new_card)
+    ]
+).drop(
+    columns=['new_card']
+).to_csv(f'{export}/board.csv', index=False)
 
 
 potsize.to_csv(f'{export}/potsize.csv', index=False)

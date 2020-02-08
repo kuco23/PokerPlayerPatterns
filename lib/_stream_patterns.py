@@ -64,12 +64,12 @@ player_show_cards = re.compile(
     r'(?P<state>Wins|Loses): '
     r'(?P<amount>[\d\.]+)\.'
 )
-new_turn = re.compile(
+new_turn_board = re.compile(
     r'\*{3} '
-    r'(?P<turn_name>\w+) '
+    r'(?P<turn_name>FLOP|TURN|RIVER) '
     r'\*{3}: '
-    r'(?P<board>\[.+?\])'
-    r'(?: (?P<new_card>\[\w{2}\]))?'
+    r'\[(?P<board>[^\]]*)\]'
+    r'(?: \[(?P<new_card>\w{2})\])?'
 )
 pot_size = re.compile(
     r'Pot: '
@@ -96,7 +96,7 @@ out_types = {
         (player_action, OutId.PlayerAction)
     ],
     '**': [
-        (new_turn, OutId.NewTurn)
+        (new_turn_board, OutId.NewTurn)
     ],
     'Pot:': [
         (pot_size, OutId.PotSize)
@@ -153,7 +153,7 @@ data_info = {
     OutId.NewTurn : {
         'turn_name': str,
         'board': str,
-        'new_cards': str
+        'new_card': str
     },
     OutId.PotSize : {
         'pot_size': float

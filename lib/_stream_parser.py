@@ -35,6 +35,10 @@ gather = {
         ['user', 'action', 'amount'],
         ['round_id', 'turn', 'action_order']
     ),
+    OId.NewTurn : (
+        ['board', 'new_card'],
+        ['round_id', 'turn']
+    ),
     OId.PotSize : (
         ['pot_size'],
         ['round_id']
@@ -106,8 +110,7 @@ def parseCoro():
         line = yield (pid, context.data)
         context.data = None
         pid, mch = parseLine(line)
-        if pid in gather and context.round:
-            context.data = extractData(pid, mch, context)
         if pid in state_change:
             updateContext(pid, context)
-                   
+        if pid in gather and context.round:
+            context.data = extractData(pid, mch, context)
