@@ -7,35 +7,42 @@ vdic = dict(zip(
     list(map(str, range(2, 11))) + list('JQKA'),
     range(0, 13)
 ))
+
 def encodeCards(cards):
     return [
         [vdic[c[:-1]], sdic[c[-1]]]
         for c in cards.split()
     ]
+
 def getHand(cards):
     parser = HandParser(encodeCards(cards))
     parser.parse()
     return parser.handenum
 
+# this counts how many cards can fill a straight
+# in a given hand
 def straightOuts(cards):
     cards = encodeCards(cards)
     
-    indexes = [0] * 14
+    indexes = [0] * 13
     for i in list(zip(*cards))[0]:
         indexes[i] = 1
 
-    counter, outs = 0, []
-    for i, j in enumerate(indexes):
-        if 14 - i < 5 - counter: break
-        if j: counter += 1
+    counter, outs = 0, 0
+    for i in range(-1, 13):
+        if 13 - i < 5 - counter: break
+        if indexes[i]: counter += 1
         else:
-            for k in indexes[(i+1):(i+5-counter)]:
-                if not k: break
-            else: outs.append(i)
+            for k in range(i+1, i+5-counter):
+                if not indexes[k]: break
+            else: outs += 1 # i is an out
             counter = 0
 
-    return len(outs)
+    return outs
 
+# checks if there is ONE card that can fill
+# a flush in a given hand (if there are
+# four same-suited cards in a hand)
 def flushOut(cards):
     cards = encodeCards(cards)
     c = Counter(list(zip(*cards))[1])

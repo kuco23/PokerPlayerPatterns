@@ -66,8 +66,8 @@ user_df.to_csv(f'{export}/user_ids.csv', index=False)
 
 buyins_df = pd.merge(
     buyins, user_df,
-    how='outer', on='user'
-).dropna().drop(
+    how='inner', on='user'
+).drop(
     columns=['user']
 )
 buyins_df.to_csv(f'{export}/buyins.csv', index=False)
@@ -79,22 +79,25 @@ round_blinds = rounds.melt(
     ['small_blind', 'big_blind'], [0, 1]
 )
 pd.merge(
-    user_df, blinds, 'outer', 'user'
-).dropna().drop(
+    user_df, blinds, 'inner', 'user'
+).drop(
     columns=['user']
 ).replace(
     ['small', 'big'], [0, 1]
 ).rename(
-    columns={'blind_type': 'blind_type_id'}
+    columns = {
+        'blind_type': 'blind_type_id',
+        'value': 'blind_value'
+    }
 ).merge(
     round_blinds,
-    how='outer', on=['blind_type_id', 'round_id']
+    'inner', ['blind_type_id', 'round_id']
 ).to_csv(f'{export}/blinds.csv', index=False)
 
 
 pd.merge(
-    user_df, received, 'outer', 'user'
-).dropna().drop(
+    user_df, received, 'inner', 'user'
+).drop(
     columns=['user']
 ).groupby(
     ['round_id', 'user_id']
@@ -113,18 +116,18 @@ pd.merge(
 ).to_csv(f'{export}/received_cards.csv', index=False)
 
 
-cardshow.amount = (
-    cardshow.amount * 
-    cardshow.state.replace(
-        ['Loses', 'Wins'], [-1, 1]
+cardshow.assign(
+    winnings = (
+        cardshow.amount * 
+        cardshow.state.replace(
+            ['Loses', 'Wins'], [-1, 1]
+        )
     )
-)
-cardshow.drop(
-    columns=['state']
+).drop(
+    columns=['state', 'amount']
 ).merge(
-    user_df,
-    how='outer', on='user'
-).dropna().drop(
+    user_df, 'inner', 'user'
+).drop(
     columns=['user']
 ).to_csv(f'{export}/cardshow.csv', index=False)
 
@@ -140,8 +143,8 @@ action_df = actions.replace([
         'turn': 'turn_id'
     }
 ).merge(
-    user_df, 'outer', 'user'
-).dropna().drop(
+    user_df, 'inner', 'user'
+).drop(
     columns=['user']
 )
 # Some players bought in without taking any actions.
@@ -176,6 +179,8 @@ newturn.assign(
     ]
 ).drop(
     columns=['new_card']
+).rename(
+    columns = dict(turn='turn_id')
 ).to_csv(f'{export}/board.csv', index=False)
 
 
