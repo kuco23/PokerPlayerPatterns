@@ -3,7 +3,7 @@ PokerPlayerPatterns (PPP)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/kuco23/PokerPlayerPatterns/master)
 
 V projektu bom analiziral podatke, ki opisujejo 40 000 odigranih partij pokra.
-Podatki so vzeti od [tukaj](https://www.kaggle.com/smeilz/poker-holdem-games#File198.txt).
+Podatki so vzeti na strani [KAGGLE.com](https://www.kaggle.com/smeilz/poker-holdem-games#File198.txt), so pa tudi v repozitoriju pod imenom `poker_games.7z`.
 
 Med zajete podatke spadajo:
 - [x] karte dobljene na začetku partije,
@@ -19,4 +19,4 @@ V repozitoriju sta dve glavni skripti za predelavo podatkov v csv.
 Skripta `send_to_csv.py` podatke v `poker_games.txt` spravi
 v tabele sprejemljive oblike, `tidy_csv.py` pa jih popravi
 v podatke prijazne za analizo. Končne čiste tabele so predstavljene
-v datoteki `notebook_tabele.ipynb`.
+v datoteki `notebook_tables.ipynb`.1
