@@ -49,6 +49,8 @@ def flushOut(cards):
     return int(max(c.values()) == 4)
     
 
+# pip install pokerlib
+# from pokerlib import HandParser
 class HandParser:
     __slots__ = [
         "original", "ncards", "cards",

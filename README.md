@@ -19,4 +19,4 @@ V repozitoriju sta dve glavni skripti za predelavo podatkov v csv.
 Skripta `send_to_csv.py` podatke v `poker_games.txt` spravi
 v tabele sprejemljive oblike, `tidy_csv.py` pa jih popravi
 v podatke prijazne za analizo. Končne čiste tabele so predstavljene
-v datoteki `notebook_tables.ipynb`.1
+v datoteki `notebook_tables.ipynb`.
