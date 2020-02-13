@@ -14,3 +14,9 @@ Analiza vključuje naslednje teme:
 - [x] korelacija med številom zmag in povprečjem dobičkov,
 - [x] vpliv kombinacij vrednosti kart na dobiček,
 - [x] karakterizacija in analiza blefiranja.
+
+V repozitoriju sta dve glavni skripti za predelavo podatkov v csv.
+Skripta `send_to_csv.py` podatke v `poker_games.txt` spravi
+v tabele sprejemljive oblike, `tidy_csv.py` pa jih popravi
+v podatke prijazne za analizo. Končne čiste tabele so predstavljene
+v datoteki `notebook_tabele.ipynb`.
