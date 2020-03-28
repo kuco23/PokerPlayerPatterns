@@ -2,21 +2,12 @@ PokerPlayerPatterns (PPP)
 =====================
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/kuco23/PokerPlayerPatterns/master)
 
-V projektu bom analiziral podatke, ki opisujejo 40 000 odigranih partij pokra.
-Podatki so vzeti na strani [KAGGLE.com](https://www.kaggle.com/smeilz/poker-holdem-games#File198.txt), so pa tudi v repozitoriju pod imenom `poker_games.7z`.
+In this project we analyse the data, which describes over 40 000 rounds of poker.
+This data is taken from [KAGGLE.com](https://www.kaggle.com/smeilz/poker-holdem-games#File198.txt), though is also zipped in the repository under the name `poker_games.7z`
 
-Med zajete podatke spadajo:
-- [x] karte dobljene na začetku partije,
-- [x] igralčeve akcije,
-- [x] igralčev končni relativni dobiček.
+The main themes of the analysis contain:
+- [x] correlation between the number of wins and the money-winning average,
+- [x] the effect of specific card combinations on the winnings,
+- [x] characterisation of bluffing.
 
-Analiza vključuje naslednje teme:
-- [x] korelacija med številom zmag in povprečjem dobičkov,
-- [x] vpliv kombinacij vrednosti kart na dobiček,
-- [x] karakterizacija in analiza blefiranja.
-
-V repozitoriju sta dve glavni skripti za predelavo podatkov v csv.
-Skripta `send_to_csv.py` podatke v `poker_games.txt` spravi
-v tabele sprejemljive oblike, `tidy_csv.py` pa jih popravi
-v podatke prijazne za analizo. Končne čiste tabele so predstavljene
-v datoteki `notebook_tables.ipynb`.
+In the repository there are two main scripts for converting the source file into more managable csv files. The first, `send_to_csv.py` takes the raw data inside `poker_games.txt` and sorts them into tables. The second, `tidy_csv.py` tidies the data into something more analysis-friendly.
